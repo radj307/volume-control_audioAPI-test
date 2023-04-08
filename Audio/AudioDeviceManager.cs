@@ -16,7 +16,7 @@ namespace Audio
 
             _deviceNotificationClient = new(_deviceEnumerator);
 
-            _deviceNotificationClient.DeviceStateChanged += this.DeviceNotificationClient_DeviceStateChanged; ;
+            _deviceNotificationClient.DeviceStateChanged += this.DeviceNotificationClient_DeviceStateChanged;
             _deviceNotificationClient.DeviceAdded += this.DeviceNotificationClient_DeviceAdded;
             _deviceNotificationClient.DeviceRemoved += this.DeviceNotificationClient_DeviceRemoved;
 
