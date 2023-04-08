@@ -1,161 +1,10 @@
 ﻿using CoreAudio;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-using VolumeControl.Log;
 
 namespace Audio
 {
     /// <summary>
-    /// An audio endpoint device.
+    /// Manages a list of active audio devices.
     /// </summary>
-    public class AudioDevice : IVolumeControl, IReadOnlyVolumeControl, INotifyPropertyChanged, IDisposable
-    {
-        #region Constructor
-        internal AudioDevice(MMDevice mmDevice)
-        {
-            MMDevice = mmDevice;
-            
-            Name = mmDevice.GetDeviceName();
-            ID = mmDevice.ID;
-
-            if (MMDevice.AudioSessionManager2 is null)
-            {
-                throw new NullReferenceException($"{nameof(AudioDevice)} '{Name}' has a null {nameof(MMDevice.AudioSessionManager2)} property!");
-            }
-            if (MMDevice.AudioEndpointVolume is null)
-            {
-                throw new NullReferenceException($"{nameof(AudioDevice)} '{Name}' has a null {nameof(MMDevice.AudioEndpointVolume)} property!");
-            }
-            if (MMDevice.AudioMeterInformation is null)
-            {
-                throw new NullReferenceException($"{nameof(AudioDevice)} '{Name}' has a null {nameof(MMDevice.AudioMeterInformation)} property!");
-            }
-
-            AudioEndpointVolume.OnVolumeNotification += this.AudioEndpointVolume_OnVolumeNotification;
-        }
-        #endregion Constructor
-
-        #region Events
-        /// <inheritdoc/>
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new(propertyName));
-        /// <summary>
-        /// Occurs when this <see cref="AudioDevice"/> instance's volume or mute state was changed.
-        /// </summary>
-        public event VolumeChangedEventHandler? VolumeChanged;
-        private void NotifyVolumeChanged(AudioVolumeNotificationData data) => VolumeChanged?.Invoke(this, new(data));
-        #endregion Events
-
-        #region Fields
-        /// <summary>
-        /// Used to sequence calls to the <see cref="AudioEndpointVolume"/> property.
-        /// </summary>
-        private readonly object lock_AudioEndpointVolume = new();
-        private bool disposedValue;
-        #endregion Fields
-
-        #region Properties
-        private static LogWriter Log => FLog.Log;
-        internal MMDevice MMDevice { get; }
-        internal AudioEndpointVolume AudioEndpointVolume
-        {
-            get
-            {
-                lock (lock_AudioEndpointVolume)
-                {
-                    return MMDevice.AudioEndpointVolume!;
-                }
-            }
-        }
-        internal AudioSessionManager2 AudioSessionManager => MMDevice.AudioSessionManager2!;
-
-        /// <summary>
-        /// Gets the name of this <see cref="AudioDevice"/> instance as shown in Windows.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// Gets the ID string of this <see cref="AudioDevice"/> instance.
-        /// </summary>
-        public string ID { get; }
-
-        #region Properties (IVolumeControl)
-        /// <inheritdoc/>
-        public float NativeVolume
-        {
-            get => AudioEndpointVolume.MasterVolumeLevelScalar;
-            set
-            {
-                if (value < 0.0f)
-                    value = 0.0f;
-                else if (value > 1.0f)
-                    value = 1.0f;
-                AudioEndpointVolume.MasterVolumeLevelScalar = value;
-                NotifyPropertyChanged();
-            }
-        }
-        /// <inheritdoc/>
-        public int Volume
-        {
-            get => VolumeLevelConverter.FromNativeVolume(NativeVolume);
-            set
-            {
-                NativeVolume = VolumeLevelConverter.ToNativeVolume(value);
-                NotifyPropertyChanged();
-            }
-        }
-        /// <inheritdoc/>
-        public bool Mute
-        {
-            get => AudioEndpointVolume.Mute;
-            set
-            {
-                AudioEndpointVolume.Mute = value;
-                NotifyPropertyChanged();
-            }
-        }
-        #endregion Properties (IVolumeControl)
-        #endregion Properties
-
-        #region Methods
-        #region Methods (EventHandlers)
-        /// <summary>
-        /// Triggers the <see cref="VolumeChanged"/> event.
-        /// </summary>
-        private void AudioEndpointVolume_OnVolumeNotification(AudioVolumeNotificationData data)
-            => NotifyVolumeChanged(data);
-        #endregion Methods (EventHandlers)
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    MMDevice.Dispose();
-                }
-
-                disposedValue = true;
-            }
-        }
-        /// <inheritdoc/>
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion Methods
-    }
-    public static class MMDeviceExtensions
-    {
-        /// <summary>
-        /// Gets the name of this <see cref="MMDevice"/> instance as shown in Windows.
-        /// </summary>
-        /// <param name="mmDevice">The <see cref="MMDevice"/> instance to retrieve the name of.</param>
-        /// <returns>The actual name of <paramref name="mmDevice"/> as a <see cref="string"/>.</returns>
-        public static string GetDeviceName(this MMDevice mmDevice)
-            => Regex.Replace(mmDevice.DeviceFriendlyName, $"\\(\\s*?{mmDevice.DeviceFriendlyName}\\s*?\\)", "", RegexOptions.Compiled).Trim();
-    }
     public class AudioDeviceManager
     {
         public AudioDeviceManager(DataFlow deviceDataFlow)
@@ -165,17 +14,17 @@ namespace Audio
 
             _deviceEnumerator = new MMDeviceEnumerator(_eventContext);
 
-            foreach (var mmDevice in _deviceEnumerator.EnumerateAudioEndPoints(DeviceDataFlow, DeviceState.Active))
-            {
-                CreateAndAddDeviceIfUnique(mmDevice);
-            }
-            Log.Debug($"Successfully initialized {Devices.Count} audio devices.");
-
             _deviceNotificationClient = new(_deviceEnumerator);
 
             _deviceNotificationClient.DeviceStateChanged += this.DeviceNotificationClient_DeviceStateChanged; ;
             _deviceNotificationClient.DeviceAdded += this.DeviceNotificationClient_DeviceAdded;
             _deviceNotificationClient.DeviceRemoved += this.DeviceNotificationClient_DeviceRemoved;
+
+            foreach (var mmDevice in _deviceEnumerator.EnumerateAudioEndPoints(DeviceDataFlow, DeviceState.Active))
+            {
+                CreateAndAddDeviceIfUnique(mmDevice);
+            }
+            Log.Debug($"Successfully initialized {Devices.Count} audio devices.");
         }
 
         #region Events
@@ -286,10 +135,10 @@ namespace Audio
         /// Gets the <see cref="AudioDevice"/> instance associated with the given <paramref name="deviceID"/> string. (<see cref="MMDevice.ID"/>)
         /// </summary>
         /// <param name="deviceID">The ID of the target device.</param>
-        /// <param name="sCompareType">The <see cref="StringComparison"/> type to use when comparing ID strings.</param>
+        /// <param name="comparisonType">The <see cref="StringComparison"/> type to use when comparing ID strings.</param>
         /// <returns>The <see cref="AudioDevice"/> associated with the given <paramref name="deviceID"/> if found; otherwise <see langword="null"/>.</returns>
-        public AudioDevice? FindDeviceByID(string deviceID, StringComparison sCompareType = StringComparison.Ordinal)
-            => Devices.FirstOrDefault(dev => dev.ID.Equals(deviceID, sCompareType));
+        public AudioDevice? FindDeviceByID(string deviceID, StringComparison comparisonType = StringComparison.Ordinal)
+            => Devices.FirstOrDefault(dev => dev.ID.Equals(deviceID, comparisonType));
         /// <summary>
         /// Gets the <see cref="AudioDevice"/> instance associated with the given <paramref name="mmDevice"/>.
         /// </summary>
@@ -340,38 +189,4 @@ namespace Audio
 
         #endregion Methods
     }
-    /// <summary>
-    /// Contains event data for the <see cref="VolumeChangedEventHandler"/> event type.
-    /// </summary>
-    public sealed class VolumeChangedEventArgs : EventArgs, IReadOnlyVolumeControl
-    {
-        #region Constructor
-        /// <summary>
-        /// Creates a new <see cref="VolumeChangedEventArgs"/> instance with the given <paramref name="data"/>.
-        /// </summary>
-        /// <param name="data">The <see cref="NAudio.CoreAudioApi.AudioVolumeNotificationData"/> object from the underlying event.</param>
-        public VolumeChangedEventArgs(AudioVolumeNotificationData data)
-            => AudioVolumeNotificationData = data;
-        #endregion Constructor
-
-        #region Properties
-        /// <summary>
-        /// The underlying <see cref="NAudio.CoreAudioApi.AudioVolumeNotificationData"/> event argument object received from NAudio.
-        /// </summary>
-        public AudioVolumeNotificationData AudioVolumeNotificationData { get; }
-        /// <inheritdoc/>
-        public float NativeVolume => AudioVolumeNotificationData.MasterVolume;
-        /// <inheritdoc/>
-        public int Volume => _volume ??= VolumeLevelConverter.FromNativeVolume(NativeVolume);
-        private int? _volume;
-        /// <inheritdoc/>
-        public bool Mute => AudioVolumeNotificationData.Muted;
-        #endregion Properties
-    }
-    /// <summary>
-    /// Represents a method that is called when an audio instance's volume or mute state was changed.
-    /// </summary>
-    /// <param name="sender">The <see cref="AudioDevice"/> that sent the event.</param>
-    /// <param name="e"></param>
-    public delegate void VolumeChangedEventHandler(AudioDevice sender, VolumeChangedEventArgs e);
 }
