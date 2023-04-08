@@ -1,0 +1,10 @@
+﻿<Application
+    x:Class="volume_control_audioAPI_test.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:volume_control_audioAPI_test"
+    StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary />
+    </Application.Resources>
+</Application>

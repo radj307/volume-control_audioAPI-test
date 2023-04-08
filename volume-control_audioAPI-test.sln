@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "volume-control_audioAPI-test", "volume-control_audioAPI-test\volume-control_audioAPI-test.csproj", "{440F5DB6-0CE2-4DB3-8542-412517EF46F5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Audio", "Audio\Audio.csproj", "{B37D606C-3C56-4168-8204-80055EEFAD59}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPF", "WPF\WPF.csproj", "{E51F5F78-82CE-4E13-9528-2C28F78FD15A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VolumeControl.Log", "VolumeControl.Log\VolumeControl.Log.csproj", "{864C3F80-2A62-498F-9297-CB49CEF04897}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+		SDK|Any CPU = SDK|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{440F5DB6-0CE2-4DB3-8542-412517EF46F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{440F5DB6-0CE2-4DB3-8542-412517EF46F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{440F5DB6-0CE2-4DB3-8542-412517EF46F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{440F5DB6-0CE2-4DB3-8542-412517EF46F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{440F5DB6-0CE2-4DB3-8542-412517EF46F5}.SDK|Any CPU.ActiveCfg = Release|Any CPU
+		{440F5DB6-0CE2-4DB3-8542-412517EF46F5}.SDK|Any CPU.Build.0 = Release|Any CPU
+		{B37D606C-3C56-4168-8204-80055EEFAD59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B37D606C-3C56-4168-8204-80055EEFAD59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B37D606C-3C56-4168-8204-80055EEFAD59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B37D606C-3C56-4168-8204-80055EEFAD59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B37D606C-3C56-4168-8204-80055EEFAD59}.SDK|Any CPU.ActiveCfg = Release|Any CPU
+		{B37D606C-3C56-4168-8204-80055EEFAD59}.SDK|Any CPU.Build.0 = Release|Any CPU
+		{E51F5F78-82CE-4E13-9528-2C28F78FD15A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E51F5F78-82CE-4E13-9528-2C28F78FD15A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E51F5F78-82CE-4E13-9528-2C28F78FD15A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E51F5F78-82CE-4E13-9528-2C28F78FD15A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E51F5F78-82CE-4E13-9528-2C28F78FD15A}.SDK|Any CPU.ActiveCfg = Release|Any CPU
+		{E51F5F78-82CE-4E13-9528-2C28F78FD15A}.SDK|Any CPU.Build.0 = Release|Any CPU
+		{864C3F80-2A62-498F-9297-CB49CEF04897}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{864C3F80-2A62-498F-9297-CB49CEF04897}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{864C3F80-2A62-498F-9297-CB49CEF04897}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{864C3F80-2A62-498F-9297-CB49CEF04897}.Release|Any CPU.Build.0 = Release|Any CPU
+		{864C3F80-2A62-498F-9297-CB49CEF04897}.SDK|Any CPU.ActiveCfg = SDK|Any CPU
+		{864C3F80-2A62-498F-9297-CB49CEF04897}.SDK|Any CPU.Build.0 = SDK|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {897D9681-E17E-403B-972D-216E28D86942}
+	EndGlobalSection
+EndGlobal
