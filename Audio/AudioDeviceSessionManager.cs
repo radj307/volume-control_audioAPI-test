@@ -16,7 +16,7 @@ namespace Audio
         /// <summary>
         /// Creates a new <see cref="AudioDeviceSessionManager"/> instance for the given <paramref name="audioDevice"/>.
         /// </summary>
-        /// <param name="audioDevice">The <see cref="AudioDevice"/> instance to attach this instance to.</param>
+        /// <param name="audioDevice">The <see cref="Audio.AudioDevice"/> instance to attach this <see cref="AudioDeviceSessionManager"/> instance to.</param>
         internal AudioDeviceSessionManager(AudioDevice audioDevice)
         {
             AudioDevice = audioDevice;

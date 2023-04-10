@@ -71,6 +71,10 @@ namespace volume_control_audioAPI_test.ViewModels
             }
         }
 
-        public void Dispose() => this.AudioDevice.Dispose();
+        public void Dispose()
+        {
+            this.AudioDevice.Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }

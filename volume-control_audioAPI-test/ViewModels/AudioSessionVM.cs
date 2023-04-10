@@ -64,6 +64,10 @@ namespace volume_control_audioAPI_test.ViewModels
             return icons;
         }
 
-        public void Dispose() => ((IDisposable)this.AudioSession).Dispose();
+        public void Dispose()
+        {
+            ((IDisposable)this.AudioSession).Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }
