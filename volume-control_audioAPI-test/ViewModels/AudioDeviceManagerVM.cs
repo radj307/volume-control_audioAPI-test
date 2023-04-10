@@ -1,6 +1,5 @@
 ﻿using Audio;
 using CoreAudio;
-using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;

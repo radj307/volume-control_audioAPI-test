@@ -4,30 +4,40 @@ using CoreAudio;
 namespace Audio
 {
     /// <summary>
-    /// Manages a list of <see cref="AudioDevice"/> instances.
+    /// Manages a list of <see cref="AudioDevice"/> instances and related events.
     /// </summary>
     public sealed class AudioDeviceManager
     {
         #region Constructor
-        public AudioDeviceManager(DataFlow deviceDataFlow)
+        /// <summary>
+        /// Creates a new <see cref="AudioDeviceManager"/> instance.
+        /// </summary>
+        /// <param name="deviceDataFlow">The <see cref="DataFlow"/> type of the devices that this <see cref="AudioDeviceManager"/> instance will manage. This cannot be changed later.</param>
+        /// <param name="deviceEnumerator">The <see cref="MMDeviceEnumerator"/> instance to use.</param>
+        public AudioDeviceManager(DataFlow deviceDataFlow, MMDeviceEnumerator deviceEnumerator)
         {
-            _devices = new();
             DeviceDataFlow = deviceDataFlow;
-
-            _deviceEnumerator = new MMDeviceEnumerator(_eventContext);
-
+            _devices = new();
+            // initialize core audio api objects
+            _eventContext = deviceEnumerator.eventContext;
+            _deviceEnumerator = deviceEnumerator;
             _deviceNotificationClient = new(_deviceEnumerator);
-
+            // connect events
             _deviceNotificationClient.DeviceStateChanged += this.DeviceNotificationClient_DeviceStateChanged;
             _deviceNotificationClient.DeviceAdded += this.DeviceNotificationClient_DeviceAdded;
             _deviceNotificationClient.DeviceRemoved += this.DeviceNotificationClient_DeviceRemoved;
-
+            // initialize devices
             foreach (var mmDevice in _deviceEnumerator.EnumerateAudioEndPoints(DeviceDataFlow, DeviceState.Active))
             {
                 CreateAndAddDeviceIfUnique(mmDevice);
             }
-            Log.Debug($"Successfully initialized {Devices.Count} audio devices.");
+            Log.Debug($"Successfully initialized {Devices.Count} {nameof(AudioDevice)}s.");
         }
+        /// <summary>
+        /// Creates a new <see cref="AudioDeviceManager"/> instance.
+        /// </summary>
+        /// <param name="deviceDataFlow">The <see cref="DataFlow"/> type of the devices that this <see cref="AudioDeviceManager"/> instance will manage. This cannot be changed later.</param>
+        public AudioDeviceManager(DataFlow deviceDataFlow) : this(deviceDataFlow, new MMDeviceEnumerator(new Guid())) { }
         #endregion Constructor
 
         #region Events
@@ -49,7 +59,7 @@ namespace Audio
         #endregion Events
 
         #region Fields
-        private readonly Guid _eventContext = new();
+        private readonly Guid _eventContext;
         private readonly MMDeviceEnumerator _deviceEnumerator;
         private readonly MMNotificationClient _deviceNotificationClient;
         #endregion Fields
