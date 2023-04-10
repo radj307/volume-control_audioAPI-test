@@ -1,12 +1,14 @@
-﻿using CoreAudio;
+﻿using Audio.Helpers;
+using CoreAudio;
 
 namespace Audio
 {
     /// <summary>
     /// Manages a list of active audio devices.
     /// </summary>
-    public class AudioDeviceManager
+    public sealed class AudioDeviceManager
     {
+        #region Constructor
         public AudioDeviceManager(DataFlow deviceDataFlow)
         {
             Devices = new();
@@ -26,32 +28,63 @@ namespace Audio
             }
             Log.Debug($"Successfully initialized {Devices.Count} audio devices.");
         }
+        #endregion Constructor
 
         #region Events
         /// <summary>
-        /// Occurs when an <see cref="AudioDevice"/> is added to the <see cref="Devices"/> list for any reason.
+        /// Occurs when an <see cref="AudioDevice"/> was added to the <see cref="Devices"/> list for any reason.
         /// </summary>
         public event EventHandler<AudioDevice>? DeviceAddedToList;
         private void NotifyDeviceAddedToList(AudioDevice audioDevice) => DeviceAddedToList?.Invoke(this, audioDevice);
         /// <summary>
-        /// Occurs when an <see cref="AudioDevice"/> is removed from the <see cref="Devices"/> list for any reason.
+        /// Occurs when an <see cref="AudioDevice"/> was removed from the <see cref="Devices"/> list for any reason.
         /// </summary>
         public event EventHandler<AudioDevice>? DeviceRemovedFromList;
         private void NotifyDeviceRemovedFromList(AudioDevice audioDevice) => DeviceRemovedFromList?.Invoke(this, audioDevice);
+        /// <summary>
+        /// Occurs when an <see cref="AudioDevice"/> instance's state was changed.
+        /// </summary>
+        public event EventHandler<AudioDevice>? DeviceStateChanged;
+        private void NotifyDeviceStateChanged(AudioDevice audioDevice) => DeviceStateChanged?.Invoke(this, audioDevice);
         #endregion Events
 
         #region EventHandlers (_deviceNotificationClient)
-        private void DeviceNotificationClient_DeviceRemoved(object? sender, DeviceNotificationEventArgs e)
+        private void DeviceNotificationClient_DeviceStateChanged(object? sender, DeviceStateChangedEventArgs e)
         {
-            if (FindDeviceByID(e.DeviceId) is AudioDevice audioDevice)
+            if (!e.TryGetDevice(out MMDevice? mmDevice) || mmDevice is null) return;
+            if (!DeviceDataFlow.HasFlag(mmDevice.DataFlow)) return;
+
+            if (e.DeviceState == DeviceState.Active && mmDevice.State == DeviceState.Active)
             {
-                Devices.Remove(audioDevice);
+                if (CreateAndAddDeviceIfUnique(mmDevice) is AudioDevice newAudioDevice)
+                {
+                    NotifyDeviceStateChanged(newAudioDevice);
+                    Log.Debug($"{nameof(AudioDevice)} '{newAudioDevice.Name}' state changed to {mmDevice.State:G}; added it to the list.");
+                }
+                else
+                {
+                    NotifyDeviceStateChanged(FindDeviceByMMDevice(mmDevice)!);
+                    Log.Error($"{nameof(AudioDevice)} '{mmDevice.GetDeviceName()}' state changed to {mmDevice.State:G}; it is already in the list!");
+                }
+            }
+            else // e.DeviceState != DeviceState.Active
+            {
+                if (FindDeviceByMMDevice(mmDevice) is AudioDevice existingAudioDevice)
+                {
+                    NotifyDeviceStateChanged(existingAudioDevice);
 
-                Log.Debug($"{nameof(AudioDevice)} '{audioDevice.Name}' was removed from the system; it was removed from the list.");
+                    Devices.Remove(existingAudioDevice);
 
-                NotifyDeviceRemovedFromList(audioDevice);
+                    Log.Debug($"{nameof(AudioDevice)} '{existingAudioDevice.Name}' state changed to {mmDevice.State:G}; removed it from the list.");
 
-                audioDevice.Dispose();
+                    NotifyDeviceRemovedFromList(existingAudioDevice);
+
+                    existingAudioDevice.Dispose();
+                }
+                else
+                {
+                    Log.Error($"{nameof(AudioDevice)} '{mmDevice.GetDeviceName()}' state changed to {mmDevice.State:G}; cannot remove it from the list because it doesn't exist!");
+                }
             }
         }
         private void DeviceNotificationClient_DeviceAdded(object? sender, DeviceNotificationEventArgs e)
@@ -75,38 +108,17 @@ namespace Audio
                 Log.Debug($"Detected new {nameof(AudioDevice)} '{mmDevice.GetDeviceName()}'; did not add it the list because its current state is {mmDevice.State:G}.");
             }
         }
-        private void DeviceNotificationClient_DeviceStateChanged(object? sender, DeviceStateChangedEventArgs e)
+        private void DeviceNotificationClient_DeviceRemoved(object? sender, DeviceNotificationEventArgs e)
         {
-            if (!e.TryGetDevice(out MMDevice? mmDevice) || mmDevice is null) return;
-            if (!DeviceDataFlow.HasFlag(mmDevice.DataFlow)) return;
-
-            if (mmDevice.State == DeviceState.Active)
+            if (FindDeviceByID(e.DeviceId) is AudioDevice audioDevice)
             {
-                if (CreateAndAddDeviceIfUnique(mmDevice) is AudioDevice newAudioDevice)
-                {
-                    Log.Debug($"{nameof(AudioDevice)} '{newAudioDevice.Name}' state changed to {mmDevice.State:G}; added it to the list.");
-                }
-                else
-                {
-                    Log.Error($"{nameof(AudioDevice)} '{mmDevice.GetDeviceName()}' state changed to {mmDevice.State:G}; it is already in the list!");
-                }
-            }
-            else // e.NewState != DeviceState.Active
-            {
-                if (FindDeviceByMMDevice(mmDevice) is AudioDevice existingAudioDevice)
-                {
-                    Devices.Remove(existingAudioDevice);
+                Devices.Remove(audioDevice);
 
-                    Log.Debug($"{nameof(AudioDevice)} '{existingAudioDevice.Name}' state changed to {mmDevice.State:G}; removed it from the list.");
+                Log.Debug($"{nameof(AudioDevice)} '{audioDevice.Name}' was removed from the system; it was removed from the list.");
 
-                    NotifyDeviceRemovedFromList(existingAudioDevice);
+                NotifyDeviceRemovedFromList(audioDevice);
 
-                    existingAudioDevice.Dispose();
-                }
-                else
-                {
-                    Log.Error($"{nameof(AudioDevice)} '{mmDevice.GetDeviceName()}' state changed to {mmDevice.State:G}; cannot remove it from the list because it doesn't exist!");
-                }
+                audioDevice.Dispose();
             }
         }
         #endregion EventHandlers (_deviceNotificationClient)
@@ -186,7 +198,6 @@ namespace Audio
                 return null;
             }
         }
-
         #endregion Methods
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Audio.Events;
+using Audio.Helpers;
+using Audio.Interfaces;
 using CoreAudio;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using VolumeControl.Log;
@@ -10,7 +11,7 @@ namespace Audio
     /// <summary>
     /// An audio endpoint device.
     /// </summary>
-    public class AudioDevice : IVolumeControl, IReadOnlyVolumeControl, IVolumePeakMeter, INotifyPropertyChanged, IDisposable
+    public sealed class AudioDevice : IVolumeControl, IReadOnlyVolumeControl, IVolumePeakMeter, INotifyPropertyChanged, IDisposable
     {
         #region Constructor
         internal AudioDevice(MMDevice mmDevice)
@@ -34,8 +35,6 @@ namespace Audio
                 throw new NullReferenceException($"{nameof(AudioDevice)} '{Name}' has a null {nameof(MMDevice.AudioMeterInformation)} property!");
             }
 
-            AudioEndpointVolume.OnVolumeNotification += this.AudioEndpointVolume_OnVolumeNotification;
-
             SessionManager = new(this);
         }
         #endregion Constructor
@@ -56,7 +55,6 @@ namespace Audio
         /// Used to sequence calls to the <see cref="AudioEndpointVolume"/> property.
         /// </summary>
         private readonly object lock_AudioEndpointVolume = new();
-        private bool disposedValue;
         /// <summary>
         /// Used to prevent duplicate <see cref="PropertyChanged"/> events from being fired.
         /// </summary>

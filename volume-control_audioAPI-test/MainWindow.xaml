@@ -7,54 +7,158 @@
     xmlns:local="clr-namespace:volume_control_audioAPI_test"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    xmlns:vm="clr-namespace:volume_control_audioAPI_test.ViewModels"
     Title="MainWindow"
     Width="800"
     Height="450"
     mc:Ignorable="d">
     <Window.Resources>
         <ResourceDictionary>
-            <local:AudioDeviceManagerVM x:Key="AudioDeviceManagerVM" />
+            <vm:AudioDeviceManagerVM x:Key="AudioDeviceManagerVM" />
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid DataContext="{StaticResource AudioDeviceManagerVM}">
+    <Grid Margin="0,3" DataContext="{StaticResource AudioDeviceManagerVM}">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <DataGrid
             Margin="6,3"
             AutoGenerateColumns="False"
+            CanUserAddRows="False"
+            CanUserDeleteRows="False"
             ItemsSource="{Binding Devices}"
             SelectedItem="{Binding SelectedDevice}">
             <DataGrid.Columns>
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate DataType="{x:Type vm:AudioDeviceVM}">
+                            <Image Source="{Binding Icon}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn
-                    Binding="{Binding Name, Mode=OneTime}"
+                    Binding="{Binding AudioDevice.Name, Mode=OneTime}"
                     Header="Name"
                     IsReadOnly="True" />
-                <DataGridCheckBoxColumn Binding="{Binding Mute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="Mute" />
-                <DataGridTextColumn Binding="{Binding Volume, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Header="Volume" />
+                <DataGridTextColumn
+                    Binding="{Binding AudioDevice.FullName}"
+                    Header="Full Name"
+                    IsReadOnly="True" />
+                <DataGridCheckBoxColumn Binding="{Binding AudioDevice.Mute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="Mute" />
+                <DataGridTextColumn Binding="{Binding AudioDevice.Volume, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Header="Volume" />
             </DataGrid.Columns>
         </DataGrid>
 
-        <DataGrid
-            Grid.Row="1"
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <TextBlock Margin="6,0" Text="Device Sessions" />
+            <DataGrid
+                Grid.Row="2"
+                Margin="6,3"
+                AutoGenerateColumns="False"
+                CanUserAddRows="False"
+                CanUserDeleteRows="False"
+                ItemsSource="{Binding SelectedDevice.Sessions}">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type vm:AudioSessionVM}">
+                                <Image Source="{Binding Icon}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn
+                        Binding="{Binding AudioSession.PID, Mode=OneTime}"
+                        Header="PID"
+                        IsReadOnly="True" />
+                    <DataGridTextColumn
+                        Binding="{Binding AudioSession.Name, Mode=OneTime}"
+                        Header="Name"
+                        IsReadOnly="True" />
+                    <DataGridCheckBoxColumn Binding="{Binding AudioSession.Mute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="Mute" />
+                    <DataGridTextColumn Binding="{Binding AudioSession.Volume, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Header="Volume" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <TextBlock Margin="6,0" Text="All Sessions" />
+            <DataGrid
+                Grid.Row="2"
+                Margin="6,3"
+                AutoGenerateColumns="False"
+                CanUserAddRows="False"
+                CanUserDeleteRows="False"
+                ItemsSource="{Binding AllSessions}">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type vm:AudioSessionVM}">
+                                <Image Source="{Binding Icon}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn
+                        Binding="{Binding AudioSession.PID, Mode=OneTime}"
+                        Header="PID"
+                        IsReadOnly="True" />
+                    <DataGridTextColumn
+                        Binding="{Binding AudioSession.Name, Mode=OneTime}"
+                        Header="Name"
+                        IsReadOnly="True" />
+                    <DataGridCheckBoxColumn Binding="{Binding AudioSession.Mute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="Mute" />
+                    <DataGridTextColumn Binding="{Binding AudioSession.Volume, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Header="Volume" />
+                    <DataGridTextColumn
+                        Binding="{Binding AudioSession.AudioDevice.FullName}"
+                        Header="Device"
+                        IsReadOnly="True" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <TextBlock Margin="6,0" Text="TreeView (Devices &amp; Sessions)" />
+            <TreeView
+                Grid.Row="2"
+                Margin="6,3"
+                ItemsSource="{Binding Devices}">
+                <TreeView.Resources>
+                    <ResourceDictionary>
+                        <DataTemplate DataType="{x:Type vm:AudioSessionVM}">
+                            <TextBlock Text="{Binding AudioSession.Name}" />
+                        </DataTemplate>
+                        <HierarchicalDataTemplate DataType="{x:Type vm:AudioDeviceVM}" ItemsSource="{Binding Sessions}">
+                            <TextBlock Text="{Binding AudioDevice.FullName}" />
+                        </HierarchicalDataTemplate>
+                    </ResourceDictionary>
+                </TreeView.Resources>
+            </TreeView>
+        </Grid>
+
+        <Button
+            Grid.Row="4"
             Margin="6,3"
-            AutoGenerateColumns="False"
-            ItemsSource="{Binding Sessions, Source={StaticResource AudioDeviceManagerVM}}">
-            <DataGrid.Columns>
-                <DataGridTextColumn
-                    Binding="{Binding AudioSession.PID, Mode=OneTime}"
-                    Header="PID"
-                    IsReadOnly="True" />
-                <DataGridTextColumn
-                    Binding="{Binding AudioSession.ProcessName, Mode=OneTime}"
-                    Header="Process Name"
-                    IsReadOnly="True" />
-                <DataGridCheckBoxColumn Binding="{Binding AudioSession.Mute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="Mute" />
-                <DataGridTextColumn Binding="{Binding AudioSession.Volume, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Header="Volume" />
-            </DataGrid.Columns>
-        </DataGrid>
+            Click="Button_Click"
+            Content="[DEBUG] Write Log Seperator Message" />
     </Grid>
 </Window>

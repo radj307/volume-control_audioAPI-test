@@ -1,4 +1,6 @@
-﻿using CoreAudio;
+﻿using Audio.Helpers;
+using Audio.Interfaces;
+using CoreAudio;
 
 namespace Audio.Events
 {

@@ -4,53 +4,37 @@ using VolumeControl.Log;
 namespace Audio
 {
     /// <summary>
-    /// Manages the list of <see cref="AudioSession"/> instances for an <see cref="Audio.AudioDevice"/>.
+    /// Manages a list of <see cref="AudioSession"/> instances and their related events for a single <see cref="Audio.AudioDevice"/> instance.
     /// </summary>
-    public class AudioDeviceSessionManager
+    /// <remarks>
+    /// This class is highly coupled to <see cref="Audio.AudioDevice"/>, and cannot be constructed externally.<br/>
+    /// If you're looking for a session manager that works with multiple <see cref="Audio.AudioDevice"/> instances, see <see cref="Audio.AudioSessionManager"/>.
+    /// </remarks>
+    public sealed class AudioDeviceSessionManager
     {
+        #region Constructor
         /// <summary>
         /// Creates a new <see cref="AudioDeviceSessionManager"/> instance for the given <paramref name="audioDevice"/>.
         /// </summary>
         /// <param name="audioDevice">The <see cref="AudioDevice"/> instance to attach this instance to.</param>
-        public AudioDeviceSessionManager(AudioDevice audioDevice)
+        internal AudioDeviceSessionManager(AudioDevice audioDevice)
         {
             AudioDevice = audioDevice;
             AudioSessionManager = AudioDevice.AudioSessionManager;
 
-            Sessions = new();
+            _sessions = new();
+
+            AudioSessionManager.OnSessionCreated += this.AudioSessionManager_OnSessionCreated;
 
             if (AudioSessionManager.Sessions is not null)
-            { // initialize the sessions list
+            { // populate the sessions list
                 foreach (var audioSessionControl in AudioSessionManager.Sessions)
                 {
                     CreateAndAddSessionIfUnique(audioSessionControl);
                 }
             }
-
-            AudioSessionManager.OnSessionCreated += this.AudioSessionManager_OnSessionCreated;
         }
-
-        private void AudioSessionManager_OnSessionCreated(object sender, CoreAudio.Interfaces.IAudioSessionControl2 newSessionControl)
-        {
-            newSessionControl.GetSessionInstanceIdentifier(out string newSessionInstanceIdentifier);
-            AudioSessionManager.RefreshSessions();
-            if (AudioSessionManager.Sessions.FirstOrDefault(session => session.SessionInstanceIdentifier.Equals(newSessionInstanceIdentifier, StringComparison.Ordinal)) is AudioSessionControl2 audioSessionControl)
-            {
-                if (CreateAndAddSessionIfUnique(audioSessionControl) is AudioSession newAudioSession)
-                {
-                    Log.Debug($"New {nameof(AudioSession)} '{newAudioSession.ProcessName}' ({newAudioSession.PID}) created; successfully added it to the list.");
-                }
-                else
-                {
-                    var existingSession = FindSessionByAudioSessionControl(audioSessionControl);
-                    Log.Error($"New {nameof(AudioSession)} '{existingSession.ProcessName}' ({existingSession.PID}) created; but it was already in the list!");
-                }
-            }
-            else
-            {
-                Log.Error($"New {nameof(AudioSession)} created, but no new session was found!");
-            }
-        }
+        #endregion Constructor
 
         #region Events
         /// <summary>
@@ -73,7 +57,11 @@ namespace Audio
         /// <summary>
         /// Gets the list of <see cref="AudioSession"/> instances.
         /// </summary>
-        public List<AudioSession> Sessions { get; }
+        public IReadOnlyList<AudioSession> Sessions => _sessions;
+        /// <summary>
+        /// The underlying <see cref="List{T}"/> for the <see cref="Sessions"/> property.
+        /// </summary>
+        private readonly List<AudioSession> _sessions;
         #endregion Properties
 
         #region Methods
@@ -104,11 +92,11 @@ namespace Audio
         {
             if (FindSessionByAudioSessionControl(audioSessionControl) is null)
             {
-                var newSession = new AudioSession(audioSessionControl);
+                var newSession = new AudioSession(AudioDevice, audioSessionControl);
                 // connect important session events:
                 newSession.SessionDisconnected += this.Session_SessionDisconnected;
                 newSession.StateChanged += this.Session_StateChanged;
-                Sessions.Add(newSession);
+                _sessions.Add(newSession);
 
                 NotifySessionAddedToList(newSession);
 
@@ -123,7 +111,7 @@ namespace Audio
         private void DeleteSession(AudioSession session)
         {
             // remove from Sessions list
-            Sessions.Remove(session);
+            _sessions.Remove(session);
             // disconnect events just because we can
             session.SessionDisconnected -= this.Session_SessionDisconnected;
             session.StateChanged -= this.Session_StateChanged;
@@ -139,9 +127,29 @@ namespace Audio
             => DeleteSession((AudioSession)sender);
         private void Session_StateChanged(object? sender, AudioSessionState e)
         {
-            if (e.Equals(AudioSessionState.AudioSessionStateExpired))
+            if (e.Equals(AudioSessionState.AudioSessionStateExpired) && sender is AudioSession session)
             {
-                DeleteSession(sender as AudioSession);
+                DeleteSession(session);
+            }
+        }
+        private void AudioSessionManager_OnSessionCreated(object sender, CoreAudio.Interfaces.IAudioSessionControl2 newSessionControl)
+        {
+            newSessionControl.GetSessionInstanceIdentifier(out string newSessionInstanceIdentifier);
+            AudioSessionManager.RefreshSessions();
+            if (AudioSessionManager.Sessions?.FirstOrDefault(session => session.SessionInstanceIdentifier.Equals(newSessionInstanceIdentifier, StringComparison.Ordinal)) is AudioSessionControl2 audioSessionControl)
+            {
+                if (CreateAndAddSessionIfUnique(audioSessionControl) is AudioSession newAudioSession)
+                {
+                    Log.Debug($"New {nameof(AudioSession)} '{newAudioSession.ProcessName}' ({newAudioSession.PID}) created; successfully added it to the list.");
+                }
+                else if (FindSessionByAudioSessionControl(audioSessionControl) is AudioSession existingSession)
+                {
+                    Log.Error($"New {nameof(AudioSession)} '{existingSession?.ProcessName}' ({existingSession?.PID}) created; but it was already in the list!");
+                }
+            }
+            else
+            {
+                Log.Error($"New {nameof(AudioSession)} created, but no new session was found!");
             }
         }
         #endregion Methods

@@ -1,4 +1,6 @@
 ﻿using Audio.Events;
+using Audio.Helpers;
+using Audio.Interfaces;
 using CoreAudio;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -7,22 +9,37 @@ using VolumeControl.Log;
 
 namespace Audio
 {
+    /// <summary>
+    /// A single audio session running on an audio device.
+    /// </summary>
     public class AudioSession : IVolumeControl, IReadOnlyVolumeControl, IVolumePeakMeter, INotifyPropertyChanged, IDisposable
     {
-        public AudioSession(AudioSessionControl2 audioSessionControl2)
+        #region Constructor
+        internal AudioSession(AudioDevice owningDevice, AudioSessionControl2 audioSessionControl2)
         {
+            AudioDevice = owningDevice;
             AudioSessionControl = audioSessionControl2;
 
             PID = AudioSessionControl.ProcessID;
+            ProcessName = Process?.ProcessName ?? string.Empty;
+            Name = (AudioSessionControl.DisplayName.Length > 0 && !AudioSessionControl.DisplayName.StartsWith('@')) ? AudioSessionControl.DisplayName : ProcessName;
+
+            if (AudioSessionControl.SimpleAudioVolume is null)
+            {
+                throw new NullReferenceException($"{nameof(AudioSession)} '{ProcessName}' ({PID}) {nameof(AudioSessionControl2.SimpleAudioVolume)} is null!");
+            }
+            if (AudioSessionControl.AudioMeterInformation is null)
+            {
+                throw new NullReferenceException($"{nameof(AudioSession)} '{ProcessName}' ({PID}) {nameof(AudioSessionControl2.AudioMeterInformation)} is null!");
+            }
 
             AudioSessionControl.OnDisplayNameChanged += this.AudioSessionControl_OnDisplayNameChanged;
             AudioSessionControl.OnIconPathChanged += this.AudioSessionControl_OnIconPathChanged;
             AudioSessionControl.OnSessionDisconnected += this.AudioSessionControl_OnSessionDisconnected;
             AudioSessionControl.OnSimpleVolumeChanged += this.AudioSessionControl_OnSimpleVolumeChanged;
             AudioSessionControl.OnStateChanged += this.AudioSessionControl_OnStateChanged;
-
-            ProcessName = Process?.ProcessName ?? string.Empty;
         }
+        #endregion Constructor
 
         #region Events
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -63,30 +80,37 @@ namespace Audio
 
         #region Properties
         private static LogWriter Log => FLog.Log;
+        /// <summary>
+        /// Gets the <see cref="Audio.AudioDevice"/> that this <see cref="AudioSession"/> instance is running on.
+        /// </summary>
+        public AudioDevice AudioDevice { get; }
+        /// <summary>
+        /// Gets the <see cref="AudioSessionControl2"/> controller instance associated with this <see cref="AudioSession"/> instance.
+        /// </summary>
         public AudioSessionControl2 AudioSessionControl { get; }
-        internal SimpleAudioVolume SimpleAudioVolume => AudioSessionControl.SimpleAudioVolume;
+        internal SimpleAudioVolume SimpleAudioVolume => AudioSessionControl.SimpleAudioVolume!; //< constructor throws if null
+        internal AudioMeterInformation AudioMeterInformation => AudioSessionControl.AudioMeterInformation!; //< constructor throws if null
 
         /// <summary>
         /// Gets the process ID of the process associated with this <see cref="AudioSession"/> instance.
         /// </summary>
         public uint PID { get; }
+        /// <summary>
+        /// Gets the Process Name of the process associated with this <see cref="AudioSession"/> instance.
+        /// </summary>
         public string ProcessName { get; }
-        public Process? Process
-        {
-            get
-            {
-                try
-                {
-                    return Process.GetProcessById(Convert.ToInt32(PID));
-
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"Failed to get process with ID '{PID}' because of an exception:", ex);
-                    return null;
-                }
-            }
-        }
+        /// <summary>
+        /// Gets or <i>(temporarily)</i> sets the name of this <see cref="AudioSession"/> instance.
+        /// </summary>
+        /// <remarks>
+        /// This is the DisplayName of the <see cref="AudioSessionControl"/> if it isn't empty, otherwise it is <see cref="ProcessName"/>.
+        /// </remarks>
+        public string Name { get; set; }
+        /// <summary>
+        /// Gets the <see cref="System.Diagnostics.Process"/> that is controlling this <see cref="AudioSession"/> instance.
+        /// </summary>
+        public Process? Process => _process ??= GetProcess();
+        private Process? _process;
 
         #region Properties (IVolumeControl)
         public float NativeVolume
@@ -132,7 +156,7 @@ namespace Audio
         #endregion Properties (IVolumeControl)
         #region Properties (IVolumePeakMeter)
         public float PeakMeterValue
-            => AudioSessionControl.AudioMeterInformation.MasterPeakValue;
+            => AudioMeterInformation.MasterPeakValue;
         #endregion Properties (IVolumePeakMeter)
         #endregion Properties
 
@@ -164,6 +188,20 @@ namespace Audio
         private void AudioSessionControl_OnStateChanged(object sender, AudioSessionState newState)
             => NotifyStateChanged(newState);
         #endregion Methods (EventHandlers)
+
+        public Process? GetProcess()
+        {
+            try
+            {
+                return Process.GetProcessById(Convert.ToInt32(PID));
+
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Failed to get process with ID '{PID}' because of an exception:", ex);
+                return null;
+            }
+        }
 
         public void Dispose()
         {

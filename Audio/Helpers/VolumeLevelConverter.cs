@@ -1,4 +1,4 @@
-﻿namespace Audio
+﻿namespace Audio.Helpers
 {
     /// <summary>
     /// Exposes functions for converting between native volume level (<see cref="float"/>; 0.0-1.0) and regular volume level (<see cref="int"/>; 0-100) values.

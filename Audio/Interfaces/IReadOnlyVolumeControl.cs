@@ -1,4 +1,4 @@
-﻿namespace Audio
+﻿namespace Audio.Interfaces
 {
     /// <summary>
     /// Represents an audio instance with a read-only volume level and mute state.

@@ -1,4 +1,6 @@
 ﻿using System.Windows;
+using volume_control_audioAPI_test.ViewModels;
+using VolumeControl.Log;
 
 namespace volume_control_audioAPI_test
 {
@@ -13,5 +15,11 @@ namespace volume_control_audioAPI_test
         }
 
         private AudioDeviceManagerVM AudioDeviceManagerVM => (this.FindResource("AudioDeviceManagerVM") as AudioDeviceManagerVM)!;
+        private static LogWriter Log => FLog.Log;
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            Log.Debug(new string('-', 120));
+        }
     }
 }

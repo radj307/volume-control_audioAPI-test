@@ -1,7 +1,7 @@
 ﻿using CoreAudio;
 using System.Text.RegularExpressions;
 
-namespace Audio
+namespace Audio.Helpers
 {
     /// <summary>
     /// Extension methods for the <see cref="MMDevice"/> class.

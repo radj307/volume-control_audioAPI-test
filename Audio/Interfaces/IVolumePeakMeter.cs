@@ -1,4 +1,4 @@
-﻿namespace Audio
+﻿namespace Audio.Interfaces
 {
     /// <summary>
     /// Represents some kind of object that has an audio peak meter.
