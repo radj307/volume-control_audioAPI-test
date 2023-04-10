@@ -51,7 +51,10 @@ namespace Audio
 
         #region Properties
         private static LogWriter Log => FLog.Log;
-        internal AudioDevice AudioDevice { get; }
+        /// <summary>
+        /// Gets the <see cref="Audio.AudioDevice"/> instance that this <see cref="AudioDeviceSessionManager"/> instance is managing.
+        /// </summary>
+        public AudioDevice AudioDevice { get; }
         internal AudioSessionManager2 AudioSessionManager { get; }
 
         /// <summary>

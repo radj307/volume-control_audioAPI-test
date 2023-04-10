@@ -25,7 +25,7 @@ namespace volume_control_audioAPI_test.ViewModels
             AudioDevice.SessionManager.SessionRemovedFromList += this.SessionManager_SessionRemovedFromList;
 
             foreach (var session in AudioDevice.SessionManager.Sessions)
-            {
+            { // initialize Sessions list:
                 Sessions.Add(new AudioSessionVM(session));
             }
         }

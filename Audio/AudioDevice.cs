@@ -63,11 +63,15 @@ namespace Audio
 
         #region Properties
         private static LogWriter Log => FLog.Log;
+        /// <summary>
+        /// Gets the underlying <see cref="CoreAudio.MMDevice"/> for this <see cref="AudioDevice"/> instance.
+        /// </summary>
         public MMDevice MMDevice { get; }
         internal AudioEndpointVolume AudioEndpointVolume
         {
             get
             {
+                // sequence calls to this device's AudioEndpointVolume instance to prevent NO_INTERFACE COM exceptions
                 lock (lock_AudioEndpointVolume)
                 {
                     return MMDevice.AudioEndpointVolume!;
@@ -78,6 +82,9 @@ namespace Audio
             => MMDevice.AudioSessionManager2!;
         internal AudioMeterInformation AudioMeterInformation
             => MMDevice.AudioMeterInformation!;
+        /// <summary>
+        /// Gets the <see cref="AudioDeviceSessionManager"/> instance that manages this <see cref="AudioDevice"/> instance's <see cref="AudioSession"/>s.
+        /// </summary>
         public AudioDeviceSessionManager SessionManager { get; }
 
         /// <summary>
