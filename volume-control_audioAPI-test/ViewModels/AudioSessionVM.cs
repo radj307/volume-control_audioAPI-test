@@ -15,6 +15,7 @@ namespace volume_control_audioAPI_test.ViewModels
     /// </summary>
     public class AudioSessionVM : INotifyPropertyChanged, IDisposable
     {
+        #region Constructor
         public AudioSessionVM(AudioSession audioSession)
         {
             AudioSession = audioSession;
@@ -23,7 +24,9 @@ namespace volume_control_audioAPI_test.ViewModels
 
             AudioSession.IconPathChanged += (s, e) => IconPair = GetIconPair();
         }
+        #endregion Constructor
 
+        #region Properties
         public AudioSession AudioSession { get; }
         private IconPair IconPair
         {
@@ -37,10 +40,14 @@ namespace volume_control_audioAPI_test.ViewModels
         }
         private IconPair _iconPair = null!;
         public ImageSource? Icon => IconPair.GetBestFitIcon(false);
+        #endregion Properties
 
+        #region Events
         public event PropertyChangedEventHandler? PropertyChanged;
         private void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new(propertyName));
+        #endregion Events
 
+        #region Methods
         private IconPair GetIconPair()
         {
             IconPair icons = null!;
@@ -69,5 +76,6 @@ namespace volume_control_audioAPI_test.ViewModels
             ((IDisposable)this.AudioSession).Dispose();
             GC.SuppressFinalize(this);
         }
+        #endregion Methods
     }
 }

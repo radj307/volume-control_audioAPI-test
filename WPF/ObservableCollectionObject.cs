@@ -7,7 +7,6 @@ using System.Windows.Threading;
 
 namespace WPF
 {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public abstract class ObservableCollectionObject : INotifyCollectionChanged, INotifyPropertyChanged
     {
         #region Private
@@ -197,5 +196,4 @@ namespace WPF
 
         #endregion Nested Types
     }
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

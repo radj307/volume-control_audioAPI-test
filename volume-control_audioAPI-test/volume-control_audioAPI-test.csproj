@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Audio\Audio.csproj" />
+    <ProjectReference Include="..\Input\Input.csproj" />
     <ProjectReference Include="..\VolumeControl.TypeExtensions\VolumeControl.TypeExtensions.csproj" />
     <ProjectReference Include="..\WPF\WPF.csproj" />
   </ItemGroup>

@@ -101,15 +101,30 @@ namespace volume_control_audioAPI_test.ViewModels
         public ObservableImmutableList<AudioSessionVM> Sessions { get; }
         public Audio.AudioSessionManager AudioSessionManager { get; }
         public ObservableImmutableList<AudioSessionVM> AllSessions { get; }
+        public AudioSessionVM? SelectedSession
+        {
+            get => _selectedSession;
+            set
+            {
+                _selectedSession = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private AudioSessionVM? _selectedSession;
         #endregion Properties
 
         #region Methods (EventHandlers)
         private void AudioDeviceManager_DeviceAddedToList(object? sender, AudioDevice e)
-            => Dispatcher.Invoke(() => Devices.Add(new AudioDeviceVM(e)));
+        {
+            var vm = new AudioDeviceVM(e);
+            Dispatcher.Invoke(() => Devices.Add(vm));
+            AudioSessionManager.AddSessionManager(vm.AudioDevice.SessionManager);
+        }
         private void AudioDeviceManager_DeviceRemovedFromList(object? sender, AudioDevice e)
         {
             var vm = Devices.First(device => device.AudioDevice.Equals(e));
             Devices.Remove(vm);
+            AudioSessionManager.RemoveSessionManager(vm.AudioDevice.SessionManager);
             vm.Dispose();
         }
         private void SessionManager_SessionAddedToList(object? sender, AudioSession e)

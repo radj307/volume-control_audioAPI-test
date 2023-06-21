@@ -8,7 +8,9 @@ using System.Windows.Media.Imaging;
 
 namespace WPF
 {
-    /// <summary>This is a helper class used to retrieve icons using multiple different context-sensitive methods from the Windows API.</summary>
+    /// <summary>
+    /// This is a helper class used to retrieve icons using multiple different context-sensitive methods from the Windows API.
+    /// </summary>
     public static class IconGetter
     {
         internal static ImageSource? GetIcon(string path, bool smallIcon, bool isDirectory)

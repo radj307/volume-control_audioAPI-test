@@ -69,7 +69,8 @@
                 AutoGenerateColumns="False"
                 CanUserAddRows="False"
                 CanUserDeleteRows="False"
-                ItemsSource="{Binding SelectedDevice.Sessions}">
+                ItemsSource="{Binding SelectedDevice.Sessions}"
+                SelectedItem="{Binding SelectedSession}">
                 <DataGrid.Columns>
                     <DataGridTemplateColumn>
                         <DataGridTemplateColumn.CellTemplate>

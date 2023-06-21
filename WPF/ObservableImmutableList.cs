@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 
 namespace WPF
 {
-#   pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public class ObservableImmutableList<T> : ObservableCollectionObject, IList, ICollection, IEnumerable, IList<T>, IImmutableList<T>, ICollection<T>, IEnumerable<T>, IReadOnlyList<T>, IReadOnlyCollection<T>, INotifyCollectionChanged, INotifyPropertyChanged
     {
         #region Private
@@ -536,5 +535,4 @@ namespace WPF
 
         #endregion Non Thead-Safe Methods
     }
-#   pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }
