@@ -1,7 +1,6 @@
-﻿using Input;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
-namespace VolumeControl.Core.Input.Actions
+namespace Input
 {
     /// <summary>
     /// Event arguments for the <see cref="IHotkeyAction.HandleKeyEvent(object?, HotkeyActionPressedEventArgs)"/> handler method.

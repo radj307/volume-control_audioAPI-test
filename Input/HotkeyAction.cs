@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Windows.Media;
-using VolumeControl.Core.Input.Actions;
 using VolumeControl.Log;
 
 namespace Input

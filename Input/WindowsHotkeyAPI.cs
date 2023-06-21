@@ -168,7 +168,7 @@ namespace Input
         /// <returns><see langword="true"/> when successful; otherwise <see langword="false"/></returns>
         public static bool Register(Hotkey hk)
         {
-            if (RegisterHotKey(messageOnlyWindow.Handle, hk.ID, (uint)hk.Modifiers, ToVirtualKey(hk.Key)) != 0)
+            if (RegisterHotKey(messageOnlyWindow.Handle, hk.ID, (uint)hk.Modifiers, ToVirtualKey(hk.GetKey())) != 0)
             { // registration succeeded
                 messageOnlyWindow.AddHook(hk.MessageHook);
                 return true;

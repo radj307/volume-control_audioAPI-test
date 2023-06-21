@@ -10,12 +10,14 @@ namespace Input
     /// </summary>
     public sealed class Hotkey : INotifyPropertyChanged, IDisposable
     {
-        public Hotkey(Key key, EModifier modifiers, bool registered)
+        public Hotkey(EFriendlyKey key, EModifier modifiers, bool registered)
         {
             ID = WindowsHotkeyAPI.NextID;
             _key = key;
             _modifiers = modifiers;
             _registered = registered;
+
+            ResolvePauseBreakKey(setFieldInsteadOfProperty: true);
 
             WindowsHotkeyAPI.Unregister(this, reportErrors: false);
             if (Registered)
@@ -23,6 +25,23 @@ namespace Input
                 WindowsHotkeyAPI.Register(this);
             }
         }
+        public Hotkey(Key key, EModifier modifiers, bool registered) : this((EFriendlyKey)key, modifiers, registered) { }
+        public Hotkey(KeyGesture keyGesture, bool registered)
+        {
+            ID = WindowsHotkeyAPI.NextID;
+            _key = (EFriendlyKey)keyGesture.Key;
+            _modifiers = (EModifier)keyGesture.Modifiers;
+            _registered = registered;
+
+            ResolvePauseBreakKey(setFieldInsteadOfProperty: true);
+
+            WindowsHotkeyAPI.Unregister(this, reportErrors: false);
+            if (Registered)
+            {
+                WindowsHotkeyAPI.Register(this);
+            }
+        }
+        public Hotkey(string keyGestureString, bool registered) : this((KeyGesture)new KeyGestureConverter().ConvertFromString(keyGestureString)!, registered) { }
 
         #region Events
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -42,17 +61,18 @@ namespace Input
         /// <summary>
         /// Gets or sets the primary <see cref="System.Windows.Input.Key"/> of this <see cref="Hotkey"/> instance.
         /// </summary>
-        public Key Key
+        public EFriendlyKey Key
         {
             get => _key;
             set
             {
                 _key = value;
+                ResolvePauseBreakKey();
                 WindowsHotkeyAPI.Reregister(this);
                 NotifyPropertyChanged();
             }
         }
-        private Key _key;
+        private EFriendlyKey _key;
         /// <summary>
         /// Gets or sets the <see cref="EModifier"/> keys of this <see cref="Hotkey"/> instance.
         /// </summary>
@@ -63,6 +83,7 @@ namespace Input
             {
                 var changes = _modifiers ^ value;
                 _modifiers = value;
+                ResolvePauseBreakKey();
                 WindowsHotkeyAPI.Reregister(this);
                 NotifyPropertyChanged();
                 // Notify property changed for modifier properties:
@@ -189,6 +210,46 @@ namespace Input
         #endregion Properties
 
         #region Methods
+        /// <summary>
+        /// Gets this <see cref="Hotkey"/> instance's key in a WPF-compatible type.
+        /// </summary>
+        /// <returns>The <see cref="Key"/> property as a <see cref="System.Windows.Input.Key"/></returns>
+        public Key GetKey() => (Key)Key;
+        /// <summary>
+        /// Gets a <see cref="string"/> that represents this <see cref="Hotkey"/> instance's key combination.
+        /// </summary>
+        /// <returns><see cref="string"/> representation of this <see cref="Hotkey"/> instance's key &amp; modifiers.</returns>
+        public string? GetKeyGestureString() => new KeyGestureConverter().ConvertToString(new KeyGesture(GetKey(), (ModifierKeys)Modifiers));
+        /// <summary>
+        /// Gets a <see cref="KeyGesture"/> that represents this <see cref="Hotkey"/> instance's key combination.
+        /// </summary>
+        /// <returns><see cref="KeyGesture"/> representing this <see cref="Hotkey"/> instance's key &amp; modifiers.</returns>
+        public KeyGesture GetKeyGesture() => new(GetKey(), (ModifierKeys)Modifiers, GetKeyGestureString());
+        /// <summary>
+        /// Fixes unexpected behaviour when using the PAUSE/BREAK key and the CTRL modifier.
+        /// </summary>
+        /// <remarks>
+        /// This is necessary because CTRL+PAUSE/BREAK resolves to the CANCEL key.
+        /// Any key binding that involves both the CTRL modifier &amp; the PAUSE/BREAK key will never work. Similarly, any key binding that involves the CANCEL key but not the CTRL modifier will never work.
+        /// </remarks>
+        /// <param name="setFieldInsteadOfProperty">When <see langword="true"/>, sets the <see cref="_key"/> field directly instead of using <see cref="Key"/> property's setter, which avoids registration and the <see cref="PropertyChanged"/> event; when <see langword="false"/>, the <see cref="Key"/> property's setter is used.<br/><b>NEVER SET THIS TO <see langword="true"/> WHEN CALLING THIS METHOD OUTSIDE OF THE CONSTRUCTOR!</b></param>
+        private void ResolvePauseBreakKey(bool setFieldInsteadOfProperty = false)
+        {
+            if (_key == EFriendlyKey.PauseBreak && _modifiers.HasFlag(EModifier.Ctrl))
+            { // key is set to PAUSE/BREAK but modifiers include CTRL - hotkey will never fire unless key is changed to CANCEL
+                if (setFieldInsteadOfProperty)
+                    _key = EFriendlyKey.Cancel;
+                else
+                    Key = EFriendlyKey.Cancel;
+            }
+            else if (_key == EFriendlyKey.Cancel && !_modifiers.HasFlag(EModifier.Ctrl))
+            { // key is set to CANCEL but modifiers do not include CTRL - hotkey will never fire unless key is changed to PAUSE/BREAK
+                if (setFieldInsteadOfProperty)
+                    _key = EFriendlyKey.PauseBreak;
+                else
+                    Key = EFriendlyKey.PauseBreak;
+            }
+        }
         /// <summary>
         /// Receives window events and handles <see cref="WindowsHotkeyAPI.WM_HOTKEY"/> events that apply to this <see cref="Hotkey"/> instance.
         /// </summary>
