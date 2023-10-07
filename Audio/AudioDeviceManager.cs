@@ -1,11 +1,16 @@
 ﻿using Audio.Helpers;
 using CoreAudio;
+using VolumeControl.Log;
+using VolumeControl.TypeExtensions;
 
 namespace Audio
 {
     /// <summary>
     /// Manages a list of <see cref="AudioDevice"/> instances and related events.
     /// </summary>
+    /// <remarks>
+    /// The <see cref="AudioDeviceManager"/> class is responsible for managing the list of active audio devices and handling all events related directly to <see cref="AudioDevice"/> instances.
+    /// </remarks>
     public sealed class AudioDeviceManager
     {
         #region Constructor
@@ -26,6 +31,7 @@ namespace Audio
             _deviceNotificationClient.DeviceStateChanged += this.DeviceNotificationClient_DeviceStateChanged;
             _deviceNotificationClient.DeviceAdded += this.DeviceNotificationClient_DeviceAdded;
             _deviceNotificationClient.DeviceRemoved += this.DeviceNotificationClient_DeviceRemoved;
+            _deviceNotificationClient.DefaultDeviceChanged += this.DeviceNotificationClient_DefaultDeviceChanged;
             // initialize devices
             foreach (var mmDevice in _deviceEnumerator.EnumerateAudioEndPoints(DeviceDataFlow, DeviceState.Active))
             {
@@ -33,6 +39,7 @@ namespace Audio
             }
             Log.Debug($"Successfully initialized {Devices.Count} {nameof(AudioDevice)}s.");
         }
+
         /// <summary>
         /// Creates a new <see cref="AudioDeviceManager"/> instance.
         /// </summary>
@@ -65,7 +72,7 @@ namespace Audio
         #endregion Fields
 
         #region Properties
-        private static VolumeControl.Log.LogWriter Log => VolumeControl.Log.FLog.Log;
+        private static LogWriter Log => VolumeControl.Log.FLog.Log;
         /// <summary>
         /// Gets the list of <see cref="AudioDevice"/> instances.
         /// </summary>
@@ -137,6 +144,7 @@ namespace Audio
                 return null;
             }
         }
+        #endregion Methods
 
         #region Methods (_deviceNotificationClient EventHandlers)
         private void DeviceNotificationClient_DeviceStateChanged(object? sender, DeviceStateChangedEventArgs e)
@@ -185,9 +193,7 @@ namespace Audio
             if (mmDevice.State.Equals(DeviceState.Active))
             {
                 if (CreateAndAddDeviceIfUnique(mmDevice) is AudioDevice newAudioDevice)
-                {
                     Log.Debug($"Detected new {nameof(AudioDevice)} '{newAudioDevice.Name}'; added it to the list.");
-                }
                 else
                 {
                     Log.Error($"Detected new {nameof(AudioDevice)} '{mmDevice.GetDeviceName()}'; it is already in the list!");
@@ -211,7 +217,12 @@ namespace Audio
                 audioDevice.Dispose();
             }
         }
+        private void DeviceNotificationClient_DefaultDeviceChanged(object? sender, DefaultDeviceChangedEventArgs e)
+        {
+            Devices.ForEach(device => device.IsDefault = false);
+            if (FindDeviceByID(e.DeviceId) is AudioDevice audioDevice)
+                audioDevice.IsDefault = true;
+        }
         #endregion Methods (_deviceNotificationClient EventHandlers)
-        #endregion Methods
     }
 }

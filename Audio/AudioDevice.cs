@@ -4,14 +4,13 @@ using Audio.Interfaces;
 using CoreAudio;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using VolumeControl.Log;
 
 namespace Audio
 {
     /// <summary>
     /// An audio endpoint device.
     /// </summary>
-    public sealed class AudioDevice : IVolumeControl, IReadOnlyVolumeControl, IVolumePeakMeter, INotifyPropertyChanged, IDisposable
+    public sealed class AudioDevice : IAudioControl, IReadOnlyAudioControl, IAudioPeakMeter, INotifyPropertyChanged, IDisposable
     {
         #region Constructor
         internal AudioDevice(MMDevice mmDevice)
@@ -23,19 +22,15 @@ namespace Audio
             ID = mmDevice.ID;
 
             if (MMDevice.AudioSessionManager2 is null)
-            {
                 throw new NullReferenceException($"{nameof(AudioDevice)} '{Name}' has a null {nameof(MMDevice.AudioSessionManager2)} property!");
-            }
             if (MMDevice.AudioEndpointVolume is null)
-            {
                 throw new NullReferenceException($"{nameof(AudioDevice)} '{Name}' has a null {nameof(MMDevice.AudioEndpointVolume)} property!");
-            }
             if (MMDevice.AudioMeterInformation is null)
-            {
                 throw new NullReferenceException($"{nameof(AudioDevice)} '{Name}' has a null {nameof(MMDevice.AudioMeterInformation)} property!");
-            }
 
             SessionManager = new(this);
+
+            AudioEndpointVolume.OnVolumeNotification += AudioEndpointVolume_OnVolumeNotification;
         }
         #endregion Constructor
 
@@ -62,11 +57,10 @@ namespace Audio
         #endregion Fields
 
         #region Properties
-        private static LogWriter Log => FLog.Log;
         /// <summary>
-        /// Gets the underlying <see cref="CoreAudio.MMDevice"/> for this <see cref="AudioDevice"/> instance.
+        /// Gets the underlying <see cref="MMDevice"/> for this <see cref="AudioDevice"/> instance.
         /// </summary>
-        public MMDevice MMDevice { get; }
+        internal MMDevice MMDevice { get; }
         internal AudioEndpointVolume AudioEndpointVolume
         {
             get
@@ -99,8 +93,28 @@ namespace Audio
         /// Gets the ID string of this <see cref="AudioDevice"/> instance.
         /// </summary>
         public string ID { get; }
+        /// <summary>
+        /// Gets whether this is the default <see cref="AudioDevice"/> or not.
+        /// </summary>
+        /// <returns><see langword="true"/> when this is the default device; otherwise <see langword="false"/>.</returns>
+        public bool IsDefault
+        {
+            get => _isDefault;
+            internal set
+            {
+                _isDefault = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private bool _isDefault = false;
+        /// <summary>
+        /// Gets the path to the device's icon file.
+        /// </summary>
+        public string IconPath => MMDevice.IconPath;
+        #endregion Properties
 
-        #region Properties (IVolumeControl)
+        #region IAudioControl Implementation
+        /// <inheritdoc/>
         public float NativeVolume
         {
             get => AudioEndpointVolume.MasterVolumeLevelScalar;
@@ -119,6 +133,7 @@ namespace Audio
                 isNotifying = false;
             }
         }
+        /// <inheritdoc/>
         public int Volume
         {
             get => VolumeLevelConverter.FromNativeVolume(NativeVolume);
@@ -132,6 +147,7 @@ namespace Audio
                 isNotifying = false;
             }
         }
+        /// <inheritdoc/>
         public bool Mute
         {
             get => AudioEndpointVolume.Mute;
@@ -141,27 +157,37 @@ namespace Audio
                 NotifyPropertyChanged();
             }
         }
-        #endregion Properties (IVolumeControl)
-        #region Properties (IVolumePeakMeter)
+        #endregion IAudioControl Implementation
+
+        #region IAudioPeakMeter Implementation
+        /// <inheritdoc/>
         public float PeakMeterValue
             => AudioMeterInformation.MasterPeakValue;
-        #endregion Properties (IVolumePeakMeter)
-        #endregion Properties
+        #endregion IAudioPeakMeter Implementation
 
-        #region Methods
-        #region Methods (EventHandlers)
-        /// <summary>
-        /// Triggers the <see cref="VolumeChanged"/> event.
-        /// </summary>
-        private void AudioEndpointVolume_OnVolumeNotification(AudioVolumeNotificationData data)
-            => NotifyVolumeChanged(data);
-        #endregion Methods (EventHandlers)
-
+        #region IDisposable Implementation
+        /// <inheritdoc/>
         public void Dispose()
         {
             ((IDisposable)this.MMDevice).Dispose();
             GC.SuppressFinalize(this);
         }
-        #endregion Methods
+        #endregion IDisposable Implementation
+
+        #region EventHandlers
+
+        #region AudioEndpointVolume
+        /// <summary>
+        /// Triggers the <see cref="VolumeChanged"/> event.
+        /// </summary>
+        private void AudioEndpointVolume_OnVolumeNotification(AudioVolumeNotificationData data)
+        {
+            NativeVolume = data.MasterVolume;
+            Mute = data.Muted;
+            NotifyVolumeChanged(data);
+        }
+        #endregion AudioEndpointVolume
+
+        #endregion EventHandlers
     }
 }

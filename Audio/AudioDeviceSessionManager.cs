@@ -1,4 +1,5 @@
 ﻿using CoreAudio;
+using CoreAudio.Interfaces;
 using VolumeControl.Log;
 
 namespace Audio
@@ -131,20 +132,16 @@ namespace Audio
         private void Session_StateChanged(object? sender, AudioSessionState e)
         {
             if (e.Equals(AudioSessionState.AudioSessionStateExpired) && sender is AudioSession session)
-            {
                 DeleteSession(session);
-            }
         }
-        private void AudioSessionManager_OnSessionCreated(object sender, CoreAudio.Interfaces.IAudioSessionControl2 newSessionControl)
+        private void AudioSessionManager_OnSessionCreated(object sender, IAudioSessionControl2 newSessionControl)
         {
             newSessionControl.GetSessionInstanceIdentifier(out string newSessionInstanceIdentifier);
             AudioSessionManager.RefreshSessions();
             if (AudioSessionManager.Sessions?.FirstOrDefault(session => session.SessionInstanceIdentifier.Equals(newSessionInstanceIdentifier, StringComparison.Ordinal)) is AudioSessionControl2 audioSessionControl)
             {
                 if (CreateAndAddSessionIfUnique(audioSessionControl) is AudioSession newAudioSession)
-                {
                     Log.Debug($"New {nameof(AudioSession)} '{newAudioSession.ProcessName}' ({newAudioSession.PID}) created; successfully added it to the list.");
-                }
                 else if (FindSessionByAudioSessionControl(audioSessionControl) is AudioSession existingSession)
                 {
                     Log.Error($"New {nameof(AudioSession)} '{existingSession?.ProcessName}' ({existingSession?.PID}) created; but it was already in the list!");

@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Threading;
 using VolumeControl.Log;
+using VolumeControl.TypeExtensions;
 using WPF;
 
 namespace volume_control_audioAPI_test.ViewModels
@@ -34,21 +35,39 @@ namespace volume_control_audioAPI_test.ViewModels
 
             AudioSessionManager = new();
 
-            AudioSessionManager.SessionAddedToList += this.AudioSessionManager_SessionAddedToList;
-            AudioSessionManager.SessionRemovedFromList += this.AudioSessionManager_SessionRemovedFromList;
+            AudioSessionManager.AddedSessionToList += this.AudioSessionManager_SessionAddedToList;
+            AudioSessionManager.RemovedSessionFromList += this.AudioSessionManager_SessionRemovedFromList;
 
-            AudioSessionManager.AddSessionManagers(Devices.Select(d => d.AudioDevice.SessionManager));
+            Devices.Select(d => d.AudioDevice.SessionManager).ForEach(AudioSessionManager.AddSessionManager);
+
+            // multi selector:
+            AudioSessionMultiSelector = new(AudioSessionManager);
+
+            SelectedSessions = new();
+            foreach (var item in AudioSessionMultiSelector.SelectedItems)
+            {
+                SelectedSessions.Add(AllSessions.First(vm => vm.AudioSession.Equals(item)));
+            }
+
+            AudioSessionMultiSelector.SessionSelected += this.AudioSessionMultiSelector_SessionSelected;
+            AudioSessionMultiSelector.SessionDeselected += this.AudioSessionMultiSelector_SessionDeselected;
+
+            foreach (var sessionVM in AllSessions)
+            {
+                sessionVM.AudioSessionMultiSelector = AudioSessionMultiSelector;
+            }
         }
 
-
-        private void AudioSessionManager_SessionAddedToList(object? sender, AudioSession e)
-            => Dispatcher.Invoke(() => AllSessions.Add(new AudioSessionVM(e)));
-        private void AudioSessionManager_SessionRemovedFromList(object? sender, AudioSession e)
+        #region AudioSessionMultiSelector
+        private void AudioSessionMultiSelector_SessionSelected(object? sender, AudioSession e)
         {
-            var vm = AllSessions.First(svm => svm.AudioSession.Equals(e));
-            AllSessions.Remove(vm);
-            vm.Dispose();
+            SelectedSessions.Add(AllSessions.First(vm => vm.AudioSession.Equals(e)));
         }
+        private void AudioSessionMultiSelector_SessionDeselected(object? sender, AudioSession e)
+        {
+            SelectedSessions.Remove(AllSessions.First(vm => vm.AudioSession.Equals(e)));
+        }
+        #endregion AudioSessionMultiSelector
 
         #region Events
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -89,7 +108,7 @@ namespace volume_control_audioAPI_test.ViewModels
                     // populate the sessions list
                     foreach (var session in _selectedDevice.AudioDevice.SessionManager.Sessions)
                     {
-                        Sessions.Add(new(session));
+                        Sessions.Add(new AudioSessionVM(session) { AudioSessionMultiSelector = AudioSessionMultiSelector });
                     }
                 }
 
@@ -111,9 +130,31 @@ namespace volume_control_audioAPI_test.ViewModels
             }
         }
         private AudioSessionVM? _selectedSession;
+
+        public AudioSessionMultiSelector AudioSessionMultiSelector { get; }
+        public ObservableImmutableList<AudioSessionVM> SelectedSessions { get; }
         #endregion Properties
 
-        #region Methods (EventHandlers)
+        #region EventHandlers
+
+        #region AudioSessionManager
+        private void AudioSessionManager_SessionAddedToList(object? sender, AudioSession e)
+        {
+            var sessionVM = new AudioSessionVM(e)
+            {
+                AudioSessionMultiSelector = AudioSessionMultiSelector
+            };
+            Dispatcher.Invoke(() => AllSessions.Add(sessionVM));
+        }
+        private void AudioSessionManager_SessionRemovedFromList(object? sender, AudioSession e)
+        {
+            var vm = AllSessions.First(svm => svm.AudioSession.Equals(e));
+            AllSessions.Remove(vm);
+            vm.Dispose();
+        }
+        #endregion AudioSessionManager
+
+        #region AudioDeviceManager
         private void AudioDeviceManager_DeviceAddedToList(object? sender, AudioDevice e)
         {
             var vm = new AudioDeviceVM(e);
@@ -127,14 +168,21 @@ namespace volume_control_audioAPI_test.ViewModels
             AudioSessionManager.RemoveSessionManager(vm.AudioDevice.SessionManager);
             vm.Dispose();
         }
+        #endregion AudioDeviceManager
+
+        #region SessionManager
         private void SessionManager_SessionAddedToList(object? sender, AudioSession e)
-            => Dispatcher.Invoke(() => Sessions.Add(new AudioSessionVM(e)));
+        {
+            Dispatcher.Invoke(() => Sessions.Add(new AudioSessionVM(e) { AudioSessionMultiSelector = AudioSessionMultiSelector }));
+        }
         private void SessionManager_SessionRemovedFromList(object? sender, AudioSession e)
         {
             var vm = Sessions.First(session => session.AudioSession.Equals(e));
             Sessions.Remove(vm);
             vm.Dispose();
         }
-        #endregion Methods (EventHandlers)
+        #endregion SessionManager
+
+        #endregion EventHandlers
     }
 }

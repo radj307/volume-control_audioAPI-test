@@ -1,12 +1,11 @@
 ﻿using Audio;
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
 using VolumeControl.Log;
 using VolumeControl.TypeExtensions;
-using WPF;
+using VolumeControl.WPF;
 
 namespace volume_control_audioAPI_test.ViewModels
 {
@@ -20,26 +19,35 @@ namespace volume_control_audioAPI_test.ViewModels
         {
             AudioSession = audioSession;
 
-            IconPair = GetIconPair();
+            Icon = GetIcon();
+            Icon?.Freeze();
 
-            AudioSession.IconPathChanged += (s, e) => IconPair = GetIconPair();
+            AudioSession.IconPathChanged += (s, e) => Icon = GetIcon();
         }
         #endregion Constructor
 
         #region Properties
         public AudioSession AudioSession { get; }
-        private IconPair IconPair
+        public ImageSource? Icon
         {
-            get => _iconPair;
+            get => _icon;
             set
             {
-                _iconPair = value;
+                _icon = value;
                 NotifyPropertyChanged();
-                NotifyPropertyChanged(nameof(Icon));
             }
         }
-        private IconPair _iconPair = null!;
-        public ImageSource? Icon => IconPair.GetBestFitIcon(false);
+        private ImageSource? _icon;
+        public AudioSessionMultiSelector? AudioSessionMultiSelector { get; set; }
+        public bool? IsSelected
+        {
+            get => AudioSessionMultiSelector?.GetSessionSelectionState(AudioSession);
+            set
+            {
+                if (!value.HasValue) return;
+                AudioSessionMultiSelector?.SetSessionSelectionState(AudioSession, value.Value);
+            }
+        }
         #endregion Properties
 
         #region Events
@@ -48,29 +56,33 @@ namespace volume_control_audioAPI_test.ViewModels
         #endregion Events
 
         #region Methods
-        private IconPair GetIconPair()
+        private ImageSource? GetIcon()
         {
-            IconPair icons = null!;
+            // try getting the icon from WASAPI
             var iconPath = AudioSession.AudioSessionControl.IconPath;
-            if (iconPath.Length > 0)
+            if (iconPath.Length > 0 && IconExtractor.TryExtractFromPath(iconPath, out ImageSource wasapiImageSource))
             {
-                icons = IconGetter.GetIcons(iconPath);
-                if (!icons.IsNull)
-                    return icons;
+                return wasapiImageSource;
             }
-            using Process? proc = AudioSession.GetProcess();
+
+            // try getting the icon from the process
+            var proc = AudioSession.Process;
+
+            if (proc == null) return null;
             try
             {
-                if (proc?.GetMainModulePath() is string path)
-                    return IconGetter.GetIcons(path);
+                if (proc.GetMainModulePath() is string path && IconExtractor.TryExtractFromPath(path, out ImageSource processImageSource))
+                {
+                    return processImageSource;
+                }
             }
             catch (Exception ex)
             {
-                FLog.Log.Error($"Failed to query information for process {proc?.Id}", ex);
+                FLog.Log.Error($"Failed to get an icon for session '{AudioSession.Name}' because of an exception:", ex);
             }
-            return icons;
-        }
 
+            return null;
+        }
         public void Dispose()
         {
             ((IDisposable)this.AudioSession).Dispose();

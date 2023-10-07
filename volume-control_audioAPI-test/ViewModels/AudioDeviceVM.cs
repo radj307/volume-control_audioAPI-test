@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
+using VolumeControl.WPF;
 using WPF;
 
 namespace volume_control_audioAPI_test.ViewModels
@@ -17,7 +18,7 @@ namespace volume_control_audioAPI_test.ViewModels
         {
             AudioDevice = audioDevice;
 
-            IconPair = GetIconPair();
+            Icon = IconExtractor.TryExtractFromPath(AudioDevice.IconPath, out ImageSource icon) ? icon : null;
 
             Sessions = new();
 
@@ -45,31 +46,17 @@ namespace volume_control_audioAPI_test.ViewModels
         private void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new(propertyName));
 
         public AudioDevice AudioDevice { get; }
-        private IconPair IconPair
+        public ImageSource? Icon
         {
-            get => _iconPair;
+            get => _icon;
             set
             {
-                _iconPair = value;
+                _icon = value;
                 NotifyPropertyChanged();
-                NotifyPropertyChanged(nameof(Icon));
             }
         }
-        private IconPair _iconPair = null!;
-        public ImageSource? Icon => IconPair.GetBestFitIcon(false);
+        private ImageSource? _icon = null;
         public ObservableImmutableList<AudioSessionVM> Sessions { get; }
-
-        private IconPair GetIconPair()
-        {
-            try
-            {
-                return IconGetter.GetIcons(AudioDevice.MMDevice.IconPath);
-            }
-            catch (Exception)
-            {
-                return new();
-            }
-        }
 
         public void Dispose()
         {

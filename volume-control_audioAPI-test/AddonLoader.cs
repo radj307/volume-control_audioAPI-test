@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Media;
-using VolumeControl.Core.Input.Actions;
 using VolumeControl.Log;
 using VolumeControl.TypeExtensions;
 

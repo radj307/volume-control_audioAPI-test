@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VolumeControl.TypeExtension
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Input", "Input\Input.csproj", "{135378BA-6FFF-452F-9979-8F4D5213FD04}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MockConfig", "MockConfig\MockConfig.csproj", "{EC36A674-CCFD-440E-AE25-168C4D8DEFE9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,6 +60,12 @@ Global
 		{135378BA-6FFF-452F-9979-8F4D5213FD04}.Release|Any CPU.Build.0 = Release|Any CPU
 		{135378BA-6FFF-452F-9979-8F4D5213FD04}.SDK|Any CPU.ActiveCfg = Debug|Any CPU
 		{135378BA-6FFF-452F-9979-8F4D5213FD04}.SDK|Any CPU.Build.0 = Debug|Any CPU
+		{EC36A674-CCFD-440E-AE25-168C4D8DEFE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC36A674-CCFD-440E-AE25-168C4D8DEFE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC36A674-CCFD-440E-AE25-168C4D8DEFE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC36A674-CCFD-440E-AE25-168C4D8DEFE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC36A674-CCFD-440E-AE25-168C4D8DEFE9}.SDK|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC36A674-CCFD-440E-AE25-168C4D8DEFE9}.SDK|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
